@@ -7,27 +7,17 @@ mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 
+hands = mp_hands.Hands(max_num_hands=2)
+face_mesh = mp_face_mesh.FaceMesh(refine_landmarks=True)
 
-#initialize face mesh
-face_mesh = mp_face_mesh.FaceMesh(
-    static_image_mode = False,
-    max_num_faces = 1,
-    refine_landmarks = True,
-    min_detection_confidence = 0.5,
-    min_tracking_confidence = 0.5
-
-)
-
-#initialize hands mesh
-hands = mp_hands.Hands(
-    static_image_mode = False,
-    max_num_hands = 2,
-    min_detection_confidence = 0.5,
-    min_tracking_confidence = 0.5
-)
 
 #webcam
 cap = cv2.VideoCapture(0)
+
+use_face = True
+use_hands = False
+print("Press 'f' for Face Mesh, 'h' for Hand Tracking, 'q' to quit")
+
 
 
 while cap.isOpened():
@@ -38,42 +28,54 @@ while cap.isOpened():
 
     #convert bgr to rgb
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
     #disable writable flag for performance
     rgb_frame.flags.writeable = False
-    results = face_mesh.process(rgb_frame)
-    results2 = hands.process(rgb_frame)
 
-    #set frame back to writebale drawing
-    rgb_frame.flags.writeable = True
-    frame = cv2.cvtColor(rgb_frame, cv2.COLOR_RGB2BGR)
 
-    if results.multi_face_landmarks:
-        for face_landmarks in results.multi_face_landmarks:
-            #draw the face mesh on the frame
-            mp_drawing.draw_landmarks(
-                image=frame,
-                landmark_list=face_landmarks,
-                connections = mp_face_mesh.FACEMESH_TESSELATION,
-                landmark_drawing_spec=mp_drawing_styles
-                .get_default_face_mesh_tesselation_style()
-            )
+    if use_face:
+        results = face_mesh.process(rgb_frame)
+        rgb_frame.flags.writeable = True
+        frame = cv2.cvtColor(rgb_frame, cv2.COLOR_RGB2BGR)
+        if results.multi_face_landmarks:
+            for lm in results.multi_face_landmarks:
+                mp_drawing.draw_landmarks(
+                    frame, lm,
+                    mp_face_mesh.FACEMESH_TESSELATION,
+                    landmark_drawing_spec=None,
+                    connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_tesselation_style()
+                )
 
-    if results2.multi_hand_landmarks:
-        for hand_landmarks in results2.multi_hand_landmarks:
-            #draw hand mesh
-            mp_drawing.draw_landmarks(
-                image=frame,
-                landmark_list=hand_landmarks,
-                connections = mp_hands.HAND_CONNECTIONS,
-                landmark_drawing_spec=mp_drawing_styles.get_default_hand_landmarks_style(),
-                connection_drawing_spec=mp_drawing_styles.get_default_hand_connections_style()
-            )
+    elif use_hands:
+        results = hands.process(rgb_frame)
+        rgb_frame.flags.writeable = True
+        frame = cv2.cvtColor(rgb_frame, cv2.COLOR_RGB2BGR)
+        if results.multi_hand_landmarks:
+            for lm in results.multi_hand_landmarks:
+                mp_drawing.draw_landmarks(
+                    frame, lm,
+                    mp_hands.HAND_CONNECTIONS,
+                    mp_drawing_styles.get_default_hand_landmarks_style(),
+                    mp_drawing_styles.get_default_hand_connections_style()
+                )
 
-    cv2.imshow('Face Mesh',frame)
+    
+    mode_text = "Mode: Face Mesh" if use_face else "Mode: Hand Tracking"
+    cv2.putText(frame, mode_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
 
-    if cv2.waitKey(5) & 0xFF == 27:
+    cv2.imshow("Toggle Tracker", frame)
+
+    key = cv2.waitKey(1) & 0xFF
+    if key == ord('f'):
+        use_face = True
+        use_hands = False
+    elif key == ord('h'):
+        use_face = False
+        use_hands = True
+    elif key == ord('q') or key == 27:
         break
-
+    elif key == ord('g'):
+        use_face = True
+        use_hands = True
+        
 cap.release()
 cv2.destroyAllWindows()
