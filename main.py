@@ -50,14 +50,57 @@ while cap.isOpened():
         rgb_frame.flags.writeable = True
         frame = cv2.cvtColor(rgb_frame, cv2.COLOR_RGB2BGR)
         if results.multi_hand_landmarks:
-            for lm in results.multi_hand_landmarks:
+            height, width, _ = frame.shape
+            for hand_landmarks in results.multi_hand_landmarks:
                 mp_drawing.draw_landmarks(
-                    frame, lm,
+                    frame, hand_landmarks,
                     mp_hands.HAND_CONNECTIONS,
                     mp_drawing_styles.get_default_hand_landmarks_style(),
                     mp_drawing_styles.get_default_hand_connections_style()
                 )
+                def fingers_up(hand_landmarks, image_height,image_width):
+                    fingers = []
+     #get landmark for each finger
+                    lm = hand_landmarks.landmark
 
+                    def y(id):
+                        return int(lm[id].y * image_height)
+    
+                    def x(id):
+                        return int(lm[id].x *image_width)
+    
+    #index finger
+                    if y(8) < y(6) and y(7) < y(6):
+                        fingers.append("index")
+
+    #middle finger
+                    if y(12) < y(10) :
+                        fingers.append("middle")
+    
+    #ring finger
+                    if y(16) < y(14):
+                        fingers.append("ring")
+
+    #pinky
+                    if y(20) < y(18):
+                        fingers.append("pinky")
+
+    #thumb
+                    if x(4) < x(3):
+                        fingers.append("thumb")
+
+                    return fingers
+
+                fingers = fingers_up(hand_landmarks, height, width)
+    
+                if len(fingers) == 1:
+                    print("One finger up")
+
+                elif len(fingers) == 2:
+                    print("two finger up")
+
+                elif len(fingers) == 3:
+                    print("3 finger up")
     
     mode_text = "Mode: Face Mesh" if use_face else "Mode: Hand Tracking"
     cv2.putText(frame, mode_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
@@ -79,3 +122,5 @@ while cap.isOpened():
         
 cap.release()
 cv2.destroyAllWindows()
+
+
