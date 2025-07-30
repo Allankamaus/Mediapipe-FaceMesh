@@ -101,6 +101,21 @@ while cap.isOpened():
 
                 elif len(fingers) == 3:
                     print("3 finger up")
+
+                elif len(fingers) == 4:
+                    print("4 fingers up")
+
+                elif len(fingers) == 5:
+                    print("5 fingered")
+
+                else:print("no fingering")
+
+                if fingers == ["index"]:
+                    print("index finger is up")
+
+                elif fingers == ["middle"]:
+                    print("middle finger is up")
+
     
     mode_text = "Mode: Face Mesh" if use_face else "Mode: Hand Tracking"
     cv2.putText(frame, mode_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
